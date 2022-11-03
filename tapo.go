@@ -49,6 +49,19 @@ type Status struct {
 	} `json:"result"`
 }
 
+type EnergyInfo struct {
+	ErrorCode int `json:"error_code"`
+	Result    struct {
+		TodayRuntime      int    `json:"today_runtime"`
+		MonthRuntime      int    `json:"month_runtime"`
+		TodayEnergy       int    `json:"today_energy"`
+		MonthEnergy       int    `json:"month_energy"`
+		LocalTime         string `json:"local_time"`
+		ElectricityCharge []int  `json:"electricity_charge"`
+		CurrentPower      int    `json:"current_power"`
+	} `json:"result"`
+}
+
 type Device struct {
 	ip              string
 	encodedEmail    string
@@ -84,6 +97,7 @@ func (d *Device) GetURL() string {
 
 func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 	encryptedPayload := base64.StdEncoding.EncodeToString(d.cipher.Encrypt(payload))
+	// TODO: Handle this error
 	securedPayload, _ := json.Marshal(map[string]interface{}{
 		"method": "securePassthrough",
 		"params": map[string]interface{}{
@@ -91,6 +105,7 @@ func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 		},
 	})
 
+	// TODO: Handle this error
 	req, _ := http.NewRequest("POST", d.GetURL(), bytes.NewBuffer(securedPayload))
 	req.Header.Set("Cookie", d.sessionID)
 	req.Close = true
@@ -127,6 +142,7 @@ func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 		}
 	}
 
+	// TODO: Handle this error
 	encryptedResponse, _ := base64.StdEncoding.DecodeString(jsonResp.Result.Response)
 
 	return d.cipher.Decrypt(encryptedResponse), nil
@@ -144,6 +160,7 @@ func (d *Device) Handshake() (err error) {
 	privKey, pubKey := GenerateRSAKeys()
 
 	pubPEM := DumpRSAPEM(pubKey)
+	// TODO: Handle this error
 	payload, _ := json.Marshal(map[string]interface{}{
 		"method": "handshake",
 		"params": map[string]interface{}{
@@ -171,7 +188,9 @@ func (d *Device) Handshake() (err error) {
 		return
 	}
 
+	// TODO: Handle this error
 	encryptedEncryptionKey, _ := base64.StdEncoding.DecodeString(jsonResp.Result.Key)
+	// TODO: Handle this error
 	encryptionKey, _ := rsa.DecryptPKCS1v15(rand.Reader, privKey, encryptedEncryptionKey)
 	d.cipher = &Cipher{
 		key: encryptionKey[:16],
@@ -188,6 +207,7 @@ func (d *Device) Login() (err error) {
 		return errors.New("Handshake was not performed")
 	}
 
+	// TODO: Handle this error
 	payload, _ := json.Marshal(map[string]interface{}{
 		"method": "login_device",
 		"params": map[string]interface{}{
@@ -222,6 +242,7 @@ func (d *Device) SetDeviceInfo(params map[string]interface{}) (err error) {
 		return errors.New("Login was not performed")
 	}
 
+	// TODO: Handle this error
 	payload, _ := json.Marshal(map[string]interface{}{
 		"method": "set_device_info",
 		"params": params,
@@ -259,6 +280,7 @@ func (d *Device) GetDeviceInfo() (*Status, error) {
 		return nil, errors.New("Login was not performed")
 	}
 
+	// TODO: Handle this error
 	payload, _ := json.Marshal(map[string]interface{}{
 		"method": "get_device_info",
 	})
@@ -275,11 +297,38 @@ func (d *Device) GetDeviceInfo() (*Status, error) {
 		return nil, err
 	}
 
+	// Base64 decode the Nickname and SSID of the device to be helpful to users
+	// of this module
+	// TODO: Handle this error
 	nicknameEncoded, _ := base64.StdEncoding.DecodeString(status.Result.Nickname)
 	status.Result.Nickname = string(nicknameEncoded)
-
+	// TODO: Handle this error
 	SSIDEncoded, _ := base64.StdEncoding.DecodeString(status.Result.SSID)
 	status.Result.SSID = string(SSIDEncoded)
 
 	return status, nil
+}
+
+func (d *Device) GetEnergyUsage() (*EnergyInfo, error) {
+	if d.token == nil {
+		return nil, errors.New("Login was not performed")
+	}
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"method": "get_energy_usage",
+	})
+
+	payload, err := d.DoRequest(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	energyInfo := &EnergyInfo{}
+
+	json.NewDecoder(bytes.NewBuffer(payload)).Decode(energyInfo)
+	if err = d.CheckErrorCode(energyInfo.ErrorCode); err != nil {
+		return nil, err
+	}
+
+	return energyInfo, nil
 }
