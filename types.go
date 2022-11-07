@@ -73,8 +73,8 @@ type Device struct {
 }
 
 type jsonReq struct {
-	Method string                 `json:"method"`
-	Params map[string]interface{} `json:"params"`
+	Method string      `json:"method"`
+	Params interface{} `json:"params"`
 }
 
 type jsonResp struct {
@@ -84,6 +84,20 @@ type jsonResp struct {
 		Response string `json:"response,omitempty"`
 		Token    string `json:"token,omitempty"`
 	} `json:"result"`
+}
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type handshakeRequest struct {
+	Key             string `json:"key"`
+	RequestTimeMils int    `json:"requestTimeMils"`
+}
+
+type securePassThroughRequest struct {
+	Request string `json:"request"`
 }
 
 type TapoTime time.Time

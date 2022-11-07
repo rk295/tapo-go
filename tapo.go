@@ -64,8 +64,8 @@ func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 
 	securedPayloadReq := &jsonReq{
 		Method: methodSecurePassThrough,
-		Params: map[string]interface{}{
-			"request": encryptedPayload,
+		Params: securePassThroughRequest{
+			Request: encryptedPayload,
 		},
 	}
 
@@ -131,9 +131,9 @@ func (d *Device) Handshake() (err error) {
 
 	req := &jsonReq{
 		Method: methodHandshake,
-		Params: map[string]interface{}{
-			"key":             string(pubPEM),
-			"requestTimeMils": 0,
+		Params: handshakeRequest{
+			Key:             string(pubPEM),
+			RequestTimeMils: 0,
 		},
 	}
 	payload, err := json.Marshal(req)
@@ -180,9 +180,9 @@ func (d *Device) Login() (err error) {
 
 	req := &jsonReq{
 		Method: methodDeviceLogin,
-		Params: map[string]interface{}{
-			"username": d.encodedEmail,
-			"password": d.encodedPassword,
+		Params: loginRequest{
+			Username: d.encodedEmail,
+			Password: d.encodedPassword,
 		},
 	}
 	payload, err := json.Marshal(req)
