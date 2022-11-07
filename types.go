@@ -7,8 +7,25 @@ import (
 )
 
 type apiResponse struct {
-	ErrorCode int          `json:"error_code"`
-	Result    *interface{} `json:"result"`
+	ErrorCode int         `json:"error_code"`
+	Result    interface{} `json:"result"`
+}
+
+type jsonReq struct {
+	Method string      `json:"method"`
+	Params interface{} `json:"params"`
+}
+
+type jsonResp struct {
+	ErrorCode int `json:"error_code"`
+	Result    struct {
+		Key      string `json:"key,omitempty"`
+		Response string `json:"response,omitempty"`
+	} `json:"result"`
+}
+
+type loginResponse struct {
+	Token string `json:"token"`
 }
 
 type Status struct {
@@ -70,20 +87,6 @@ type Device struct {
 	ip              string
 	sessionID       string
 	token           *string
-}
-
-type jsonReq struct {
-	Method string      `json:"method"`
-	Params interface{} `json:"params"`
-}
-
-type jsonResp struct {
-	ErrorCode int `json:"error_code"`
-	Result    struct {
-		Key      string `json:"key,omitempty"`
-		Response string `json:"response,omitempty"`
-		Token    string `json:"token,omitempty"`
-	} `json:"result"`
 }
 
 type loginRequest struct {

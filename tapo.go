@@ -196,56 +196,27 @@ func (d *Device) Login() (err error) {
 			Password: d.encodedPassword,
 		},
 	}
-	payload, err := json.Marshal(req)
-	if err != nil {
+
+	loginResponse := &loginResponse{}
+
+	if err := d.req(req, &loginResponse); err != nil {
 		return err
 	}
 
-	payload, err = d.DoRequest(payload)
-	if err != nil {
-		return
-	}
-
-	jsonResp := &jsonResp{}
-	json.NewDecoder(bytes.NewBuffer(payload)).Decode(&jsonResp)
-	if err = d.CheckErrorCode(jsonResp.ErrorCode); err != nil {
-		return err
-	}
-
-	d.token = &jsonResp.Result.Token
+	d.token = &loginResponse.Token
 	return nil
 }
 
 func (d *Device) SetDeviceInfo(params map[string]interface{}) (err error) {
-	if d.token == nil {
-		return errorNoLogin
-	}
 
 	req := &jsonReq{
 		Method: methodSetDeviceInfo,
 		Params: params,
 	}
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
-
-	payload, err = d.DoRequest(payload)
-	if err != nil {
-		return err
-	}
-
 	jsonResp := &jsonResp{}
-	json.NewDecoder(bytes.NewBuffer(payload)).Decode(&jsonResp)
-	if err = d.CheckErrorCode(jsonResp.ErrorCode); err != nil {
-		return
-	}
 
-	if jsonResp.ErrorCode != 0 {
-		return fmt.Errorf("error code %d", jsonResp.ErrorCode)
-	}
-
-	return
+	err = d.req(req, &jsonResp)
+	return err
 }
 
 func (d *Device) Switch(status bool) (err error) {
@@ -256,9 +227,10 @@ func (d *Device) Switch(status bool) (err error) {
 
 func (d *Device) GetDeviceInfo() (*Status, error) {
 	status := &Status{}
-	if err := d.req(methodGetDeviceInfo, &status); err != nil {
+	if err := d.req(&jsonReq{Method: methodGetDeviceInfo}, &status); err != nil {
 		return status, err
 	}
+
 	// Base64 decode the Nickname and SSID of the device to be helpful to users
 	// of this module
 	nicknameEncoded, err := base64.StdEncoding.DecodeString(status.Nickname)
@@ -278,7 +250,7 @@ func (d *Device) GetDeviceInfo() (*Status, error) {
 
 func (d *Device) GetEnergyUsage() (*EnergyInfo, error) {
 	energyInfo := EnergyInfo{}
-	if err := d.req(methodGetEnergyUsage, &energyInfo); err != nil {
+	if err := d.req(&jsonReq{Method: methodGetEnergyUsage}, &energyInfo); err != nil {
 		return &energyInfo, err
 	}
 	return &energyInfo, nil
@@ -286,19 +258,18 @@ func (d *Device) GetEnergyUsage() (*EnergyInfo, error) {
 
 func (d *Device) GetDeviceUsage() (*DeviceUsage, error) {
 	deviceUsage := DeviceUsage{}
-	if err := d.req(methodGetDeviceUsage, &deviceUsage); err != nil {
+	if err := d.req(&jsonReq{Method: methodGetDeviceUsage}, &deviceUsage); err != nil {
 		return &deviceUsage, err
 	}
 	return &deviceUsage, nil
-
 }
 
-func (d *Device) req(method string, target interface{}) error {
-	if d.token == nil {
+func (d *Device) req(p *jsonReq, target interface{}) error {
+	if d.token == nil && p.Method != methodDeviceLogin {
 		return errorNoLogin
 	}
 
-	payload, err := json.Marshal(&jsonReq{Method: method})
+	payload, err := json.Marshal(p)
 	if err != nil {
 		return err
 	}
