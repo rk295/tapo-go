@@ -72,9 +72,21 @@ type Device struct {
 	token           *string
 }
 
-type TapoTime time.Time
+type jsonReq struct {
+	Method string                 `json:"method"`
+	Params map[string]interface{} `json:"params"`
+}
 
-const tapoTimeFormat = "2006-01-02 03:04:05"
+type jsonResp struct {
+	ErrorCode int `json:"error_code"`
+	Result    struct {
+		Key      string `json:"key,omitempty"`
+		Response string `json:"response,omitempty"`
+		Token    string `json:"token,omitempty"`
+	} `json:"result"`
+}
+
+type TapoTime time.Time
 
 func (t *TapoTime) UnmarshalJSON(data []byte) error {
 	// Remove JSON quotes from the string
