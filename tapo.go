@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -20,6 +21,10 @@ const (
 
 	tapoTimeFormat     = "2006-01-02 03:04:05"
 	defaultContentType = "application/json"
+
+	defaultAPIPath  = "app"
+	defaultScheme   = "http"
+	defaultTokenKey = "token"
 
 	methodSecurePassThrough = "securePassthrough"
 	methodHandshake         = "handshake"
@@ -51,12 +56,18 @@ func New(ip, email, password string) *Device {
 }
 
 func (d *Device) GetURL() string {
-	// TODO: Use url.URL{}
-	if d.token == nil {
-		return fmt.Sprintf("http://%s/app", d.ip)
-	} else {
-		return fmt.Sprintf("http://%s/app?token=%s", d.ip, *d.token)
+	u := &url.URL{
+		Scheme: defaultScheme,
+		Host:   d.ip,
+		Path:   defaultAPIPath,
 	}
+
+	if d.token != nil {
+		q := u.Query()
+		q.Set(defaultTokenKey, *d.token)
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
 }
 
 func (d *Device) DoRequest(payload []byte) ([]byte, error) {
