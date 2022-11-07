@@ -12,7 +12,7 @@ type Cipher struct {
 	iv  []byte
 }
 
-func (c *Cipher) Encrypt(payload []byte) []byte {
+func (c *Cipher) encrypt(payload []byte) []byte {
 	block, _ := aes.NewCipher(c.key)
 	encrypter := cipher.NewCBCEncrypter(block, c.iv)
 
@@ -23,7 +23,7 @@ func (c *Cipher) Encrypt(payload []byte) []byte {
 	return encryptedPayload
 }
 
-func (c *Cipher) Decrypt(payload []byte) []byte {
+func (c *Cipher) decrypt(payload []byte) []byte {
 	block, _ := aes.NewCipher(c.key)
 	encrypter := cipher.NewCBCDecrypter(block, c.iv)
 

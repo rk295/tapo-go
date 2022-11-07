@@ -70,8 +70,8 @@ func (d *Device) GetURL() string {
 	return u.String()
 }
 
-func (d *Device) DoRequest(payload []byte) ([]byte, error) {
-	encryptedPayload := base64.StdEncoding.EncodeToString(d.cipher.Encrypt(payload))
+func (d *Device) doRequest(payload []byte) ([]byte, error) {
+	encryptedPayload := base64.StdEncoding.EncodeToString(d.cipher.encrypt(payload))
 
 	securedPayloadReq := &jsonReq{
 		Method: methodSecurePassThrough,
@@ -112,7 +112,7 @@ func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		return d.DoRequest(payload)
+		return d.doRequest(payload)
 	default:
 		if err = d.CheckErrorCode(jsonResp.ErrorCode); err != nil {
 			return nil, err
@@ -124,7 +124,7 @@ func (d *Device) DoRequest(payload []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return d.cipher.Decrypt(encryptedResponse), nil
+	return d.cipher.decrypt(encryptedResponse), nil
 }
 
 func (d *Device) CheckErrorCode(errorCode int) error {
@@ -136,9 +136,9 @@ func (d *Device) CheckErrorCode(errorCode int) error {
 }
 
 func (d *Device) Handshake() (err error) {
-	privKey, pubKey := GenerateRSAKeys()
+	privKey, pubKey := generateRSAKeys()
 
-	pubPEM := DumpRSAPEM(pubKey)
+	pubPEM := dumpRSAPEM(pubKey)
 
 	req := &jsonReq{
 		Method: methodHandshake,
@@ -278,7 +278,7 @@ func (d *Device) req(p *jsonReq, target interface{}) error {
 		Result: &target,
 	}
 
-	reply, err := d.DoRequest(payload)
+	reply, err := d.doRequest(payload)
 	if err != nil {
 		return err
 	}

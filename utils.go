@@ -9,7 +9,7 @@ import (
 
 const RSABits = 1024
 
-func DumpRSAPEM(pubKey *rsa.PublicKey) (pubPEM []byte) {
+func dumpRSAPEM(pubKey *rsa.PublicKey) (pubPEM []byte) {
 	pubKeyPKIX, _ := x509.MarshalPKIXPublicKey(pubKey)
 
 	pubPEM = pem.EncodeToMemory(
@@ -22,7 +22,7 @@ func DumpRSAPEM(pubKey *rsa.PublicKey) (pubPEM []byte) {
 	return
 }
 
-func GenerateRSAKeys() (*rsa.PrivateKey, *rsa.PublicKey) {
+func generateRSAKeys() (*rsa.PrivateKey, *rsa.PublicKey) {
 	key, err := rsa.GenerateKey(rand.Reader, RSABits)
 	if err != nil {
 		panic(err)
