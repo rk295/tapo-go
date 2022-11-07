@@ -1,6 +1,6 @@
 # Tapo Golang
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/rk295/tapo-go)](https://pkg.go.dev/badge/github.com/rk295/tapo-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rk295/tapo-go)](https://goreportcard.com/report/github.com/rk295/tapo-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rk295/tapo-go)](https://pkg.go.dev/github.com/rk295/tapo-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rk295/tapo-go)](https://goreportcard.com/report/github.com/rk295/tapo-go)
 
 Library for communicating with Tapo devices
 
