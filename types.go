@@ -29,32 +29,37 @@ type loginResponse struct {
 }
 
 type Status struct {
-	Avatar             string `json:"avatar"`
-	DeviceID           string `json:"device_id"`
-	DeviceON           bool   `json:"device_on"`
-	FWID               string `json:"fw_id"`
-	FWVersion          string `json:"fw_ver"`
-	HasSetLocationInfo bool   `json:"has_set_location_info"`
-	HWID               string `json:"hw_id"`
-	HWVersion          string `json:"hw_ver"`
-	IP                 string `json:"ip"`
-	Lang               string `json:"lang"`
-	Latitude           int    `json:"latitude"`
-	Location           string `json:"location"`
-	Longitude          int    `json:"longitude"`
-	MAC                string `json:"mac"`
-	Model              string `json:"model"`
-	Nickname           string `json:"nickname"`
-	OEMID              string `json:"oem_id"`
-	OnTime             int    `json:"on_time"` // The time in seconds this device has been ON since the last state change (ON/OFF
-	OverHeated         bool   `json:"overheated"`
-	Region             string `json:"Europe/Kiev"`
-	RSSI               int    `json:"rssi"`
-	SignalLevel        int    `json:"signal_level"`
-	Specs              string `json:"specs"`
-	SSID               string `json:"ssid"`
-	TimeDiff           int    `json:"time_diff"`
-	Type               string `json:"type"`
+	Avatar        string `json:"avatar"`
+	DefaultStates struct {
+		State map[string]interface{} `json:"state"`
+		Type  string                 `json:"type"`
+	} `json:"default_states"`
+	DeviceID              string `json:"device_id"`
+	DeviceON              bool   `json:"device_on"`
+	FWID                  string `json:"fw_id"`
+	FWVersion             string `json:"fw_ver"`
+	HasSetLocationInfo    bool   `json:"has_set_location_info"`
+	HWID                  string `json:"hw_id"`
+	HWVersion             string `json:"hw_ver"`
+	IP                    string `json:"ip"`
+	Lang                  string `json:"lang"`
+	Latitude              int    `json:"latitude"`
+	Location              string `json:"location"`
+	Longitude             int    `json:"longitude"`
+	MAC                   string `json:"mac"`
+	Model                 string `json:"model"`
+	Nickname              string `json:"nickname"`
+	OEMID                 string `json:"oem_id"`
+	OnTime                int    `json:"on_time"` // The time in seconds this device has been ON since the last state change (ON/OFF
+	OverHeated            bool   `json:"overheated"`
+	PowerProtectionStatus string `json:"power_protection_status"`
+	Region                string `json:"Europe/Kiev"`
+	RSSI                  int    `json:"rssi"`
+	SignalLevel           int    `json:"signal_level"`
+	Specs                 string `json:"specs"`
+	SSID                  string `json:"ssid"`
+	TimeDiff              int    `json:"time_diff"`
+	Type                  string `json:"type"`
 }
 
 type EnergyInfo struct {
@@ -68,15 +73,15 @@ type EnergyInfo struct {
 }
 
 type DeviceUsage struct {
-	PowerUsage Usage `json:"power_usage"`
-	SavedPower Usage `json:"saved_power"`
-	TimeUsage  Usage `json:"time_usage"`
+	PowerUsage Usage `json:"power_usage"` // Power usage in watt-hour (Wh)
+	SavedPower Usage `json:"saved_power"` // Saved power in watt-hour (Wh)
+	TimeUsage  Usage `json:"time_usage"`  // Time usage in minutes
 }
 
 type Usage struct {
-	Past30 int `json:"past30"`
-	Past7  int `json:"past7"`
-	Today  int `json:"today"`
+	Past30 int `json:"past30"` // Past 30 days
+	Past7  int `json:"past7"`  // Past 7 days
+	Today  int `json:"today"`  // Today
 }
 
 type Device struct {
