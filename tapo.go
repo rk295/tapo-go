@@ -19,7 +19,7 @@ import (
 const (
 	timeout = time.Second * 2
 
-	tapoTimeFormat     = "2006-01-02 03:04:05"
+	tapoTimeFormat     = "2006-01-02 15:04:05"
 	defaultContentType = "application/json"
 
 	defaultAPIPath  = "app"
