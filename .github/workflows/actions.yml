@@ -1,0 +1,24 @@
+name: Static Tests
+on: [push]
+jobs:
+  gofmt:
+    name: Go Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.16
+      - uses: actions/checkout@v3
+      - name: Check code formatting using gofmt
+        uses: Jerome1337/gofmt-action@v1.0.4
+
+  golangci:
+    name: Golang CI Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.16
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
