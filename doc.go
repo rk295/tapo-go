@@ -1,5 +1,5 @@
 /*
-This package is a Go client library for the [Tapo](https://www.tapo.com/uk/) range of smart plugs.
+This package is a Go client library for the Tapo (https://www.tapo.com/uk/) range of smart plugs.
 
 To print the Nick Name of a specific smart plug do something like this:
 
@@ -13,9 +13,8 @@ To print the Nick Name of a specific smart plug do something like this:
 
 	func main() {
 
-		device := tapo.New("192.168.1.11", "user@example.com", "your password")
-
-		if err := device.Handshake(); err != nil {
+		device, err := tapo.NewFromEnv()
+		if err != nil {
 			panic(err)
 		}
 
@@ -29,7 +28,6 @@ To print the Nick Name of a specific smart plug do something like this:
 		}
 
 		fmt.Println(deviceInfo.Nickname)
-
 	}
 
 There is an example [`examples/p110`](examples/p110) which collects information from a P110 smart plug with energy monitoring.
