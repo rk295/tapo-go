@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -33,13 +34,29 @@ const (
 	methodGetDeviceInfo     = "get_device_info"
 	methodGetEnergyUsage    = "get_energy_usage"
 	methodGetDeviceUsage    = "get_device_usage"
+
+	// TapoIPEnvName is a convenience constant that can be used as an
+	// environment variable name for configuring the client with an IP address.
+	TapoIPEnvName = "TAPO_IP"
+
+	// TapoEmailEnvName is a convenience constant that can be used as an
+	// environment variable name for configuring the client with an email address.
+	TapoEmailEnvName = "TAPO_EMAIL"
+
+	// TapoPasswordEnvName is a convenience constant that can be used as an
+	// environment variable name for configuring the client with a password.
+	TapoPasswordEnvName = "TAPO_PASSWORD"
 )
 
 var (
-	errorNoLogin     = errors.New("login was not performed")
-	errorNoHandshake = errors.New("handshake was not performed")
+	errorNoLogin = errors.New("login was not performed")
 )
 
+//
+// Public functions
+//
+
+// New returns a new Tapo device configured with the provided ip, email, password
 func New(ip, email, password string) *Device {
 	h := sha1.New()
 	h.Write([]byte(email))
@@ -55,138 +72,27 @@ func New(ip, email, password string) *Device {
 	}
 }
 
-func (d *Device) GetURL() string {
-	u := &url.URL{
-		Scheme: defaultScheme,
-		Host:   d.ip,
-		Path:   defaultAPIPath,
+// NewFromEnv returns a new Tapo device configured from the environment, using
+// the Tapo..... constants provided by the package
+func NewFromEnv() (*Device, error) {
+	ip := os.Getenv(TapoIPEnvName)
+	email := os.Getenv(TapoEmailEnvName)
+	password := os.Getenv(TapoPasswordEnvName)
+
+	if ip == "" || email == "" || password == "" {
+		return &Device{}, fmt.Errorf("must set %s, %s, %s environment variables", TapoIPEnvName, TapoEmailEnvName, TapoPasswordEnvName)
 	}
 
-	if d.token != nil {
-		q := u.Query()
-		q.Set(defaultTokenKey, *d.token)
-		u.RawQuery = q.Encode()
-	}
-	return u.String()
+	return New(ip, email, password), nil
 }
 
-func (d *Device) doRequest(payload []byte) ([]byte, error) {
-	encryptedPayload := base64.StdEncoding.EncodeToString(d.cipher.encrypt(payload))
-
-	securedPayloadReq := &jsonReq{
-		Method: methodSecurePassThrough,
-		Params: securePassThroughRequest{
-			Request: encryptedPayload,
-		},
-	}
-
-	securedPayload, err := json.Marshal(securedPayloadReq)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	req, err := http.NewRequest("POST", d.GetURL(), bytes.NewBuffer(securedPayload))
-	if err != nil {
-		return []byte{}, err
-	}
-
-	req.Header.Set("Cookie", d.sessionID)
-	req.Close = true
-
-	resp, err := d.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	jsonResp := &jsonResp{}
-	json.NewDecoder(resp.Body).Decode(&jsonResp)
-
-	switch jsonResp.ErrorCode {
-	case 9999:
-		if err = d.Handshake(); err != nil {
-			return nil, err
-		}
-		if err = d.Login(); err != nil {
-			return nil, err
-		}
-
-		return d.doRequest(payload)
-	default:
-		if err = d.CheckErrorCode(jsonResp.ErrorCode); err != nil {
-			return nil, err
-		}
-	}
-
-	encryptedResponse, err := base64.StdEncoding.DecodeString(jsonResp.Result.Response)
-	if err != nil {
-		return nil, err
-	}
-
-	return d.cipher.decrypt(encryptedResponse), nil
-}
-
-func (d *Device) CheckErrorCode(errorCode int) error {
-	if errorCode != 0 {
-		return fmt.Errorf("error code %d", errorCode)
-	}
-
-	return nil
-}
-
-func (d *Device) Handshake() (err error) {
-	privKey, pubKey := generateRSAKeys()
-
-	pubPEM := dumpRSAPEM(pubKey)
-
-	req := &jsonReq{
-		Method: methodHandshake,
-		Params: handshakeRequest{
-			Key:             string(pubPEM),
-			RequestTimeMils: 0,
-		},
-	}
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return
-	}
-
-	resp, err := http.Post(d.GetURL(), defaultContentType, bytes.NewBuffer(payload))
-	if err != nil {
-		return
-	}
-
-	defer resp.Body.Close()
-
-	jsonResp := &jsonResp{}
-	json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err = d.CheckErrorCode(jsonResp.ErrorCode); err != nil {
-		return
-	}
-
-	encryptedEncryptionKey, err := base64.StdEncoding.DecodeString(jsonResp.Result.Key)
-	if err != nil {
-		return err
-	}
-
-	encryptionKey, err := rsa.DecryptPKCS1v15(rand.Reader, privKey, encryptedEncryptionKey)
-	if err != nil {
-		return err
-	}
-	d.cipher = &Cipher{
-		key: encryptionKey[:16],
-		iv:  encryptionKey[16:],
-	}
-
-	d.sessionID = strings.Split(resp.Header.Get("Set-Cookie"), ";")[0]
-
-	return
-}
-
+// Login performs the actual login to the device.
 func (d *Device) Login() (err error) {
 	if d.cipher == nil {
-		return errorNoHandshake
+		err := d.handshake()
+		if err != nil {
+			return err
+		}
 	}
 
 	req := &jsonReq{
@@ -264,6 +170,9 @@ func (d *Device) GetDeviceUsage() (*DeviceUsage, error) {
 	return &deviceUsage, nil
 }
 
+//
+// Private functions
+//
 func (d *Device) req(p *jsonReq, target interface{}) error {
 	if d.token == nil && p.Method != methodDeviceLogin {
 		return errorNoLogin
@@ -287,9 +196,145 @@ func (d *Device) req(p *jsonReq, target interface{}) error {
 		return err
 	}
 
-	if err = d.CheckErrorCode(apiResponse.ErrorCode); err != nil {
+	if err = d.checkErrorCode(apiResponse.ErrorCode); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (d *Device) getURL() string {
+	u := &url.URL{
+		Scheme: defaultScheme,
+		Host:   d.ip,
+		Path:   defaultAPIPath,
+	}
+
+	if d.token != nil {
+		q := u.Query()
+		q.Set(defaultTokenKey, *d.token)
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
+}
+
+func (d *Device) doRequest(payload []byte) ([]byte, error) {
+	encryptedPayload := base64.StdEncoding.EncodeToString(d.cipher.encrypt(payload))
+
+	securedPayloadReq := &jsonReq{
+		Method: methodSecurePassThrough,
+		Params: securePassThroughRequest{
+			Request: encryptedPayload,
+		},
+	}
+
+	securedPayload, err := json.Marshal(securedPayloadReq)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	req, err := http.NewRequest("POST", d.getURL(), bytes.NewBuffer(securedPayload))
+	if err != nil {
+		return []byte{}, err
+	}
+
+	req.Header.Set("Cookie", d.sessionID)
+	req.Close = true
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	jsonResp := &jsonResp{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+
+	switch jsonResp.ErrorCode {
+	case 9999:
+		if err = d.handshake(); err != nil {
+			return nil, err
+		}
+		if err = d.Login(); err != nil {
+			return nil, err
+		}
+
+		return d.doRequest(payload)
+	default:
+		if err = d.checkErrorCode(jsonResp.ErrorCode); err != nil {
+			return nil, err
+		}
+	}
+
+	encryptedResponse, err := base64.StdEncoding.DecodeString(jsonResp.Result.Response)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.cipher.decrypt(encryptedResponse), nil
+}
+
+func (d *Device) checkErrorCode(errorCode int) error {
+	if errorCode != 0 {
+		return fmt.Errorf("error code %d", errorCode)
+	}
+
+	return nil
+}
+
+func (d *Device) handshake() (err error) {
+	privKey, pubKey := generateRSAKeys()
+
+	pubPEM := dumpRSAPEM(pubKey)
+
+	req := &jsonReq{
+		Method: methodHandshake,
+		Params: handshakeRequest{
+			Key:             string(pubPEM),
+			RequestTimeMils: 0,
+		},
+	}
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return
+	}
+
+	resp, err := http.Post(d.getURL(), defaultContentType, bytes.NewBuffer(payload))
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	jsonResp := &jsonResp{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return err
+	}
+
+	if err = d.checkErrorCode(jsonResp.ErrorCode); err != nil {
+		return
+	}
+
+	encryptedEncryptionKey, err := base64.StdEncoding.DecodeString(jsonResp.Result.Key)
+	if err != nil {
+		return err
+	}
+
+	encryptionKey, err := rsa.DecryptPKCS1v15(rand.Reader, privKey, encryptedEncryptionKey)
+	if err != nil {
+		return err
+	}
+	d.cipher = &Cipher{
+		key: encryptionKey[:16],
+		iv:  encryptionKey[16:],
+	}
+
+	d.sessionID = strings.Split(resp.Header.Get("Set-Cookie"), ";")[0]
+
+	return
 }

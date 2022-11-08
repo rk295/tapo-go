@@ -3,20 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/rk295/tapo-go"
 )
 
 func main() {
 
-	ip := os.Getenv("TAPO_IP")
-	email := os.Getenv("TAPO_EMAIL")
-	password := os.Getenv("TAPO_PASSWORD")
-
-	device := tapo.New(ip, email, password)
-
-	if err := device.Handshake(); err != nil {
+	device, err := tapo.NewFromEnv()
+	if err != nil {
 		panic(err)
 	}
 

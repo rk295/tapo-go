@@ -7,7 +7,7 @@ import (
 	"encoding/pem"
 )
 
-const RSABits = 1024
+const rsaBits = 1024
 
 func dumpRSAPEM(pubKey *rsa.PublicKey) (pubPEM []byte) {
 	pubKeyPKIX, _ := x509.MarshalPKIXPublicKey(pubKey)
@@ -23,7 +23,7 @@ func dumpRSAPEM(pubKey *rsa.PublicKey) (pubPEM []byte) {
 }
 
 func generateRSAKeys() (*rsa.PrivateKey, *rsa.PublicKey) {
-	key, err := rsa.GenerateKey(rand.Reader, RSABits)
+	key, err := rsa.GenerateKey(rand.Reader, rsaBits)
 	if err != nil {
 		panic(err)
 	}
