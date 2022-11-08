@@ -37,6 +37,7 @@ const (
 
 	// TapoIPEnvName is a convenience constant that can be used as an
 	// environment variable name for configuring the client with an IP address.
+	// Supports ip:port notation.
 	TapoIPEnvName = "TAPO_IP"
 
 	// TapoEmailEnvName is a convenience constant that can be used as an
@@ -56,7 +57,8 @@ var (
 // Public functions
 //
 
-// New returns a new Tapo device configured with the provided ip, email, password
+// New returns a new Tapo device configured with the provided ip, email, password.
+// ip can be in the form of ip:port.
 func New(ip, email, password string) *Device {
 	h := sha1.New()
 	h.Write([]byte(email))
@@ -73,7 +75,7 @@ func New(ip, email, password string) *Device {
 }
 
 // NewFromEnv returns a new Tapo device configured from the environment, using
-// the Tapo..... constants provided by the package
+// the Tapo..... constants provided by the package.
 func NewFromEnv() (*Device, error) {
 	ip := os.Getenv(TapoIPEnvName)
 	email := os.Getenv(TapoEmailEnvName)
