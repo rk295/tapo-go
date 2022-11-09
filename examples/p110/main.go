@@ -1,5 +1,14 @@
 package main
 
+//
+// Example to print out device info, and if supported, energy usage.
+//
+// Set the following environment variables before running (with go run main.go)
+//
+// * `TAPO_IP`
+// * `TAPO_EMAIL`
+// * `TAPO_PASSWORD`
+//
 import (
 	"encoding/json"
 	"fmt"
