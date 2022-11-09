@@ -47,6 +47,10 @@ const (
 	// TapoPasswordEnvName is a convenience constant that can be used as an
 	// environment variable name for configuring the client with a password.
 	TapoPasswordEnvName = "TAPO_PASSWORD"
+
+	// tapoSmartPlug is the string returned for "Type" if its a Smart plug with
+	// energy monitoring
+	tapoSmartPlug = "SMART.TAPOPLUG"
 )
 
 var (
@@ -170,6 +174,11 @@ func (d *Device) GetDeviceUsage() (*DeviceUsage, error) {
 		return &deviceUsage, err
 	}
 	return &deviceUsage, nil
+}
+
+// EmeterSupported returns true if the plug supports energy monitoring
+func (s *Status) EmeterSupported() bool {
+	return s.Type == tapoSmartPlug
 }
 
 //

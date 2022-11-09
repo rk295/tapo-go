@@ -26,19 +26,20 @@ func main() {
 	j, _ := json.MarshalIndent(deviceInfo, "", "  ")
 	fmt.Println("device_info", string(j))
 
-	energyInfo, err := device.GetEnergyUsage()
-	if err != nil {
-		panic(err)
+	if deviceInfo.EmeterSupported() {
+		energyInfo, err := device.GetEnergyUsage()
+		if err != nil {
+			panic(err)
+		}
+
+		j, _ = json.MarshalIndent(energyInfo, "", "  ")
+		fmt.Println("energy_usage", string(j))
+
+		deviceUsage, err := device.GetDeviceUsage()
+		if err != nil {
+			panic(err)
+		}
+		j, _ = json.MarshalIndent(deviceUsage, "", "  ")
+		fmt.Println("device_usage", string(j))
 	}
-
-	j, _ = json.MarshalIndent(energyInfo, "", "  ")
-	fmt.Println("energy_usage", string(j))
-
-	deviceUsage, err := device.GetDeviceUsage()
-	if err != nil {
-		panic(err)
-	}
-	j, _ = json.MarshalIndent(deviceUsage, "", "  ")
-	fmt.Println("device_usage", string(j))
-
 }
